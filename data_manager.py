@@ -6,9 +6,7 @@ from flight_search import FlightSearch
 from notification_manager import NotificationManager
 from datetime import datetime
 
-SHEET_ENDPOINT = (
-    "https://api.sheety.co/11e87dedc1f58a7881e7b056fa7fc1e8/flightDeals/prices"
-)
+SHEET_ENDPOINT = #enter your sheety endpoint
 
 
 class DataManager:
