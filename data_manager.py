@@ -1,16 +1,20 @@
 import requests
 import json
 from unidecode import unidecode
-from pprint import pprint
 from datetime import datetime as dt
 from flight_search import FlightSearch
+from notification_manager import NotificationManager
+from datetime import datetime
 
-SHEET_ENDPOINT = ""  ##add your sheety(sheety.co) endpoint
+SHEET_ENDPOINT = (
+    "https://api.sheety.co/11e87dedc1f58a7881e7b056fa7fc1e8/flightDeals/prices"
+)
 
 
 class DataManager:
     def __init__(self):
         self.destination_data_sheet = {}
+        self.notification_manager = NotificationManager()
 
     def get_data(self):
         r = requests.get(url=SHEET_ENDPOINT)
@@ -76,6 +80,9 @@ class DataManager:
                 and data["data"][n]["price"]
                 < self.destination_data_sheet[city_to_check]["lowestPrice"]
             ):
+                print(
+                    f"GOT A LOWER PRICE FOR{city_to_check} at {data['data'][n]['price']}"
+                )
                 update_params = {
                     "price": {
                         "lowestPrice": data["data"][n]["price"],
@@ -87,6 +94,22 @@ class DataManager:
                     json=update_params,
                 )
                 r.raise_for_status()
+                # send SMS
+                self.notification_manager.send_sms(
+                    price=data["data"][n]["price"],
+                    city_from_name=city_to_check,
+                    city_from_iata=data["data"][n]["cityCodeFrom"],
+                    city_to_name=data["data"][n]["cityTo"],
+                    city_to_iata=data["data"][n]["cityCodeTo"],
+                    departure_date=datetime.strptime(
+                        data["data"][n]["local_departure"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                    ).strftime("%d-%m-%Y at %H:%M local time"),
+                    return_date=datetime.strptime(
+                        data["data"][n]["route"][1]["local_departure"],
+                        "%Y-%m-%dT%H:%M:%S.%fZ",
+                    ).strftime("%d-%m-%Y at %H:%M local time"),
+                    kiwi_url=data["data"][n]["deep_link"],
+                )
             elif (
                 city_to_check in self.destination_data_sheet
                 and data["data"][n]["price"]
